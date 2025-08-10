@@ -38,7 +38,7 @@
     .pill .num { font-size: clamp(28px, 5vw, 48px); font-weight: 800; line-height: 1; }
     .pill .lab { font-size: 12px; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
 
-    .input-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+    .input-row { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: center; }
     .field {
       position: relative; display: flex; align-items: center; background: var(--card);
       border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 10px 14px; gap: 8px;
@@ -55,7 +55,7 @@
     .stat { background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; }
     .stat .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
     .stat .value { font-size: 22px; font-weight: 700; }
-    .stat.big .value { font-size: clamp(32px, 6vw, 56px); font-weight: 900; color: var(--accent); }
+    .stat.big .value { font-size: clamp(36px, 7vw, 64px); font-weight: 900; color: var(--accent); }
 
     footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; }
     a { color: var(--accent); text-decoration: none; }
@@ -70,7 +70,7 @@
   <main class="wrap">
     <div class="title">
       <h1 style="margin:0 0 6px; font-size: clamp(22px, 4vw, 32px);">La busta che scappa: Antonio e Carla</h1>
-      <small>Scadenza: <strong>30 luglio 2026</strong> 
+      <small>Scadenza: <strong>30 luglio 2026</strong></small>
     </div>
 
     <section class="card">
@@ -83,59 +83,47 @@
     </section>
 
     <section class="card" aria-labelledby="calc-title">
-      <h2 id="calc-title" style="margin:0 0 12px; font-size: 18px;">Calcolo importo giornaliero e residuo</h2>
+      <h2 id="calc-title" style="margin:0 0 12px; font-size: 18px;">Calcolo residuo con penale post-scadenza</h2>
 
       <div class="input-row">
-        <label class="field" style="grid-column: 1 / -1;">
+        <label class="field">
           <span>€</span>
           <input id="amount" inputmode="decimal" placeholder="Inserisci una somma, es. 100" autocomplete="off" />
         </label>
       </div>
-      <p class="hint">La somma viene ripartita in <span id="totalDays">—</span> giorni (dal 30/07/2025 al 30/07/2026). Oggi sono passati <span id="passedDays">—</span> giorni rispetto all'inizio.</p>
+      <p class="hint">Dopo il <strong>30/07/2026</strong> si sottraggono <strong>€ 25</strong> al giorno. Oggi il ritardo è di <span id="lateDays">—</span> giorni.</p>
 
       <div class="grid">
-        <div class="stat">
-          <div class="label">Quota giornaliera</div>
-          <div class="value" id="daily">€ 0,00</div>
-        </div>
-        <div class="stat">
-          <div class="label">Importo maturato (trascorso)</div>
-          <div class="value" id="accrued">€ 0,00</div>
-        </div>
         <div class="stat big">
           <div class="label">Importo restante</div>
           <div class="value" id="remaining">€ 0,00</div>
         </div>
-        <div class="stat">
-          <div class="label">Giorni rimanenti</div>
-          <div class="value" id="left">—</div>
+        <div class="stat big">
+          <div class="label">Giorni di ritardo</div>
+          <div class="value" id="late">—</div>
         </div>
       </div>
     </section>
 
     <footer>
-      Fatto con ♥. 
+      Fatto con ♥. La penale giornaliera viene calcolata come giorni di ritardo × €25 e sottratta all'importo inserito.
     </footer>
   </main>
 
   <script>
-const startUTC = Date.UTC(2025, 6, 30); // 30 luglio 2025
-const endUTC   = Date.UTC(2026, 6, 30); // 30 luglio 2026
+    // Configurazione date (mese 0-based): 6 = luglio
+    const START_DATE = new Date(2025, 6, 30); // opzionale, solo informativa
+    const DEADLINE   = new Date(2026, 6, 30, 0, 0, 0); // 30 luglio 2026
 
-    const MS = 24 * 60 * 60 * 1000;
-    function daysBetweenUTC(aUTC, bUTC) {
-      return Math.floor((bUTC - aUTC) / MS);
-    }
-    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
-    const TOTAL_DAYS = daysBetweenUTC(startUTC, endUTC);
-    const deadline = new Date(2026, 6, 30, 0, 0, 0); // 30 luglio 2026 ore 00:00
+    // Countdown alla scadenza
     const dd = document.getElementById('dd');
     const hh = document.getElementById('hh');
     const mm = document.getElementById('mm');
     const ss = document.getElementById('ss');
+
     function renderCountdown(){
       const now = new Date();
-      const diff = deadline - now;
+      const diff = DEADLINE - now;
       if (diff <= 0) { dd.textContent = '0'; hh.textContent = '0'; mm.textContent = '0'; ss.textContent = '0'; return; }
       const d = Math.floor(diff / (1000*60*60*24));
       const h = Math.floor((diff / (1000*60*60)) % 24);
@@ -145,43 +133,53 @@ const endUTC   = Date.UTC(2026, 6, 30); // 30 luglio 2026
     }
     renderCountdown();
     setInterval(renderCountdown, 1000);
-    const totalDaysEl = document.getElementById('totalDays');
-    const passedDaysEl = document.getElementById('passedDays');
-    const dailyEl = document.getElementById('daily');
-    const accruedEl = document.getElementById('accrued');
-    const remainingEl = document.getElementById('remaining');
-    const leftEl = document.getElementById('left');
+
+    // Calcolo penale e residuo
+    const MS = 24 * 60 * 60 * 1000;
+    const DAILY_PENALTY = 25; // €25/giorno dopo la scadenza
+
     const amountEl = document.getElementById('amount');
+    const remainingEl = document.getElementById('remaining');
+    const lateEl = document.getElementById('late');
+    const lateDaysHintEl = document.getElementById('lateDays');
+
     const eur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const num = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 });
+    const num = new Intl.NumberFormat('it-IT');
+
+    function daysBetweenUTC(a, b){
+      // usa UTC per contare giorni interi senza problemi di DST
+      const aUTC = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+      const bUTC = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+      return Math.floor((bUTC - aUTC) / MS);
+    }
+
     function parseAmount(value){
       if (!value) return 0;
       const normalized = value.toString().replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '');
       const x = parseFloat(normalized);
       return isNaN(x) ? 0 : Math.max(0, x);
     }
+
     function compute(){
-      const todayUTC = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
-      let passed = daysBetweenUTC(startUTC, todayUTC);
-      passed = clamp(passed, 0, TOTAL_DAYS);
-      const left = TOTAL_DAYS - passed;
+      const today = new Date();
+      const daysLate = Math.max(0, daysBetweenUTC(DEADLINE, today));
       const amount = parseAmount(amountEl.value);
-      const daily = amount / TOTAL_DAYS;
-      const accrued = daily * passed;
-      const remaining = amount - accrued;
-      totalDaysEl.textContent = TOTAL_DAYS;
-      passedDaysEl.textContent = passed;
-      dailyEl.textContent = eur.format(daily);
-      accruedEl.textContent = eur.format(accrued);
+      const penalty = daysLate * DAILY_PENALTY;
+      const remaining = Math.max(0, amount - penalty); // evita numeri negativi
+
       remainingEl.textContent = eur.format(remaining);
-      leftEl.textContent = num.format(left);
+      lateEl.textContent = num.format(daysLate);
+      if (lateDaysHintEl) lateDaysHintEl.textContent = num.format(daysLate);
     }
+
     compute();
     amountEl.addEventListener('input', compute);
+
+    // Aggiorna a mezzanotte
     (function scheduleMidnightTick(){
       const now = new Date();
       const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2);
-      setTimeout(() => { compute(); scheduleMidnightTick(); }, next - now);
+      setTimeout(() => { compute(); renderCountdown(); scheduleMidnightTick(); }, next - now);
     })();
   </script>
 </body>
