@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>La busta che scappa!</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --card: #11131a;
+      --muted: #9aa3b2;
+      --text: #e6e9ef;
+      --accent: #82e0aa;
+      --ring: rgba(130, 224, 170, 0.4);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% -10%, #1d2130 0%, transparent 60%), var(--bg);
+      color: var(--text);
+      display: grid; place-items: center; padding: 24px;
+    }
+    .wrap { width: min(920px, 100%); display: grid; gap: 20px; }
+    .title { font-weight: 700; letter-spacing: 0.2px; }
+    .title small { color: var(--muted); font-weight: 500; }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    .countdown {
+      display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; text-align: center;
+    }
+    .pill { background: var(--card); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; }
+    .pill .num { font-size: clamp(28px, 5vw, 48px); font-weight: 800; line-height: 1; }
+    .pill .lab { font-size: 12px; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .input-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+    .field {
+      position: relative; display: flex; align-items: center; background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 10px 14px; gap: 8px;
+      box-shadow: 0 0 0 0 transparent; transition: box-shadow .2s ease, border-color .2s ease;
+    }
+    .field:focus-within { box-shadow: 0 0 0 6px var(--ring); border-color: var(--accent); }
+    .field span { color: var(--muted); }
+    .field input {
+      appearance: none; width: 100%; font: inherit; color: var(--text); background: transparent; border: 0; outline: none;
+    }
+    .hint { color: var(--muted); font-size: 12px; }
+
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .stat { background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; }
+    .stat .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .stat .value { font-size: 22px; font-weight: 700; }
+    .stat.big .value { font-size: clamp(32px, 6vw, 56px); font-weight: 900; color: var(--accent); }
+
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; }
+    a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+      .countdown { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="title">
+      <h1 style="margin:0 0 6px; font-size: clamp(22px, 4vw, 32px);">La busta che scappa: Antonio e Carla</h1>
+      <small>Scadenza: <strong>30 luglio 2026</strong> 
+    </div>
+
+    <section class="card">
+      <div class="countdown" id="countdown">
+        <div class="pill"><div class="num" id="dd">—</div><div class="lab">giorni</div></div>
+        <div class="pill"><div class="num" id="hh">—</div><div class="lab">ore</div></div>
+        <div class="pill"><div class="num" id="mm">—</div><div class="lab">minuti</div></div>
+        <div class="pill"><div class="num" id="ss">—</div><div class="lab">secondi</div></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="calc-title">
+      <h2 id="calc-title" style="margin:0 0 12px; font-size: 18px;">Calcolo importo giornaliero e residuo</h2>
+
+      <div class="input-row">
+        <label class="field" style="grid-column: 1 / -1;">
+          <span>€</span>
+          <input id="amount" inputmode="decimal" placeholder="Inserisci una somma, es. 100" autocomplete="off" />
+        </label>
+      </div>
+      <p class="hint">La somma viene ripartita in <span id="totalDays">—</span> giorni (dal 30/07/2025 al 30/07/2026). Oggi sono passati <span id="passedDays">—</span> giorni rispetto all'inizio.</p>
+
+      <div class="grid">
+        <div class="stat">
+          <div class="label">Quota giornaliera</div>
+          <div class="value" id="daily">€ 0,00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Importo maturato (trascorso)</div>
+          <div class="value" id="accrued">€ 0,00</div>
+        </div>
+        <div class="stat big">
+          <div class="label">Importo restante</div>
+          <div class="value" id="remaining">€ 0,00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Giorni rimanenti</div>
+          <div class="value" id="left">—</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Fatto con ♥. 
+    </footer>
+  </main>
+
+  <script>
+const startUTC = Date.UTC(2025, 6, 30); // 30 luglio 2025
+const endUTC   = Date.UTC(2026, 6, 30); // 30 luglio 2026
+
+    const MS = 24 * 60 * 60 * 1000;
+    function daysBetweenUTC(aUTC, bUTC) {
+      return Math.floor((bUTC - aUTC) / MS);
+    }
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+    const TOTAL_DAYS = daysBetweenUTC(startUTC, endUTC);
+    const deadline = new Date(2026, 6, 30, 0, 0, 0); // 30 luglio 2026 ore 00:00
+    const dd = document.getElementById('dd');
+    const hh = document.getElementById('hh');
+    const mm = document.getElementById('mm');
+    const ss = document.getElementById('ss');
+    function renderCountdown(){
+      const now = new Date();
+      const diff = deadline - now;
+      if (diff <= 0) { dd.textContent = '0'; hh.textContent = '0'; mm.textContent = '0'; ss.textContent = '0'; return; }
+      const d = Math.floor(diff / (1000*60*60*24));
+      const h = Math.floor((diff / (1000*60*60)) % 24);
+      const m = Math.floor((diff / (1000*60)) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+      dd.textContent = d; hh.textContent = h; mm.textContent = m; ss.textContent = s;
+    }
+    renderCountdown();
+    setInterval(renderCountdown, 1000);
+    const totalDaysEl = document.getElementById('totalDays');
+    const passedDaysEl = document.getElementById('passedDays');
+    const dailyEl = document.getElementById('daily');
+    const accruedEl = document.getElementById('accrued');
+    const remainingEl = document.getElementById('remaining');
+    const leftEl = document.getElementById('left');
+    const amountEl = document.getElementById('amount');
+    const eur = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 });
+    function parseAmount(value){
+      if (!value) return 0;
+      const normalized = value.toString().replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '');
+      const x = parseFloat(normalized);
+      return isNaN(x) ? 0 : Math.max(0, x);
+    }
+    function compute(){
+      const todayUTC = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+      let passed = daysBetweenUTC(startUTC, todayUTC);
+      passed = clamp(passed, 0, TOTAL_DAYS);
+      const left = TOTAL_DAYS - passed;
+      const amount = parseAmount(amountEl.value);
+      const daily = amount / TOTAL_DAYS;
+      const accrued = daily * passed;
+      const remaining = amount - accrued;
+      totalDaysEl.textContent = TOTAL_DAYS;
+      passedDaysEl.textContent = passed;
+      dailyEl.textContent = eur.format(daily);
+      accruedEl.textContent = eur.format(accrued);
+      remainingEl.textContent = eur.format(remaining);
+      leftEl.textContent = num.format(left);
+    }
+    compute();
+    amountEl.addEventListener('input', compute);
+    (function scheduleMidnightTick(){
+      const now = new Date();
+      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2);
+      setTimeout(() => { compute(); scheduleMidnightTick(); }, next - now);
+    })();
+  </script>
+</body>
+</html>
